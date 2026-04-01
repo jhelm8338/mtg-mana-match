@@ -80,6 +80,12 @@
       flex-wrap: wrap;
     }
 
+    .header-right {
+      display: grid;
+      gap: 10px;
+      justify-items: end;
+    }
+
     .title h1 {
       margin: 0 0 8px;
       font-family: "Oxanium", sans-serif;
@@ -354,34 +360,56 @@
 
     .share-panel {
       border: 1px solid rgba(90, 210, 255, 0.4);
-      border-radius: 14px;
-      padding: 12px 14px;
+      border-radius: 12px;
+      padding: 10px 12px;
       background: rgba(10, 16, 34, 0.7);
       box-shadow: 0 0 18px rgba(56, 242, 209, 0.15);
-      max-width: 420px;
+      max-width: 360px;
+      font-size: 12px;
     }
 
     .backup-panel {
+      border: 1px solid rgba(90, 210, 255, 0.35);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: rgba(10, 16, 34, 0.65);
       max-width: 360px;
-      padding: 14px;
     }
 
     .backup-panel h2 {
-      font-size: 16px;
+      font-size: 13px;
+      margin: 0 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      font-family: "Oxanium", sans-serif;
     }
 
     .backup-panel .inline-row {
-      gap: 8px;
+      gap: 6px;
     }
 
     .backup-panel button {
-      padding: 8px 12px;
-      font-size: 12px;
+      padding: 6px 10px;
+      font-size: 11px;
     }
 
     .backup-panel .status {
-      font-size: 12px;
+      font-size: 11px;
+      padding: 6px 8px;
+      margin-top: 6px;
+    }
+
+    .backup-panel .list-item {
       padding: 8px 10px;
+    }
+
+    .backup-panel h3 {
+      font-size: 12px;
+      margin: 8px 0 6px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
     }
 
     .share-panel h4 {
@@ -522,10 +550,25 @@
         <h1 class="glitch" data-text="ManaMatch">ManaMatch</h1>
         <p>Track deck vs deck results, attach players to decks, and see matchup performance at a glance. Data is saved locally in your browser.</p>
       </div>
-      <div class="pill-row">
-        <div class="pill" id="pill-players">0 Players</div>
-        <div class="pill" id="pill-decks">0 Decks</div>
-        <div class="pill" id="pill-matches">0 Matches</div>
+      <div class="header-right">
+        <div class="pill-row">
+          <div class="pill" id="pill-players">0 Players</div>
+          <div class="pill" id="pill-decks">0 Decks</div>
+          <div class="pill" id="pill-matches">0 Matches</div>
+        </div>
+        <div class="backup-panel">
+          <h2>Backup</h2>
+          <div class="inline-row">
+            <button id="export-data">Download</button>
+            <button id="import-data" class="secondary">Upload</button>
+            <input id="import-file" type="file" accept="application/json" hidden />
+          </div>
+          <div id="backup-status" class="status" hidden></div>
+          <div>
+            <h3>Auto-Backups</h3>
+            <div id="snapshot-list"></div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -534,19 +577,6 @@
         <h4>Share Link</h4>
         <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
         <p class="muted">Each visitor keeps their own local stats in their browser.</p>
-      </div>
-      <div class="card stack backup-panel">
-        <h2>Backup</h2>
-        <div class="inline-row">
-          <button id="export-data">Download</button>
-          <button id="import-data" class="secondary">Upload</button>
-          <input id="import-file" type="file" accept="application/json" hidden />
-        </div>
-        <div id="backup-status" class="status" hidden></div>
-        <div>
-          <h3>Auto-Backups (Last 10)</h3>
-          <div id="snapshot-list"></div>
-        </div>
       </div>
     </section>
 
