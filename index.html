@@ -72,6 +72,23 @@
       z-index: 1;
     }
 
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(240px, 320px) 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .sidebar {
+      display: grid;
+      gap: 16px;
+    }
+
+    .content {
+      display: grid;
+      gap: 18px;
+    }
+
     header {
       display: flex;
       align-items: flex-start;
@@ -566,6 +583,9 @@
     @media (max-width: 720px) {
       body { padding: 18px 14px 60px; }
       header { flex-direction: column; align-items: flex-start; }
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -582,6 +602,22 @@
           <div class="pill" id="pill-decks">0 Decks</div>
           <div class="pill" id="pill-matches">0 Matches</div>
         </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="share-panel">
+          <button class="collapse-toggle" id="share-toggle" aria-expanded="false" aria-controls="share-content">
+            Share
+            <span id="share-toggle-icon">+</span>
+          </button>
+          <div id="share-content" class="collapse-content" hidden>
+            <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
+            <p class="muted">Each visitor keeps their own local stats in their browser.</p>
+          </div>
+        </div>
+
         <div class="backup-panel">
           <h2>Backup</h2>
           <div class="inline-row">
@@ -595,110 +631,98 @@
             <div id="snapshot-list"></div>
           </div>
         </div>
-        <div class="share-panel">
-          <button class="collapse-toggle" id="share-toggle" aria-expanded="false" aria-controls="share-content">
-            Share
-            <span id="share-toggle-icon">+</span>
-          </button>
-          <div id="share-content" class="collapse-content" hidden>
-            <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
-            <p class="muted">Each visitor keeps their own local stats in their browser.</p>
+
+        <div class="card stack">
+          <h2>Add Player</h2>
+          <label for="player-name">Player Name</label>
+          <input id="player-name" placeholder="e.g. Alex" />
+          <button id="add-player">Add Player</button>
+        </div>
+
+        <div class="card stack">
+          <h2>Add Deck</h2>
+          <label for="deck-name">Deck Name</label>
+          <input id="deck-name" placeholder="e.g. Mono Green Stompy" />
+          <label for="deck-commander">Commander Name</label>
+          <input id="deck-commander" list="commander-suggestions" placeholder="e.g. Atraxa, Praetors' Voice" />
+          <datalist id="commander-suggestions"></datalist>
+          <div id="commander-status" class="status" hidden>Commander lookup status.</div>
+          <div class="inline-row">
+            <label class="checkbox">
+              <input id="override-colors" type="checkbox" />
+              Override colors
+            </label>
+            <div class="color-badges">
+              <label class="checkbox"><input type="checkbox" class="color-toggle" value="W" />W</label>
+              <label class="checkbox"><input type="checkbox" class="color-toggle" value="U" />U</label>
+              <label class="checkbox"><input type="checkbox" class="color-toggle" value="B" />B</label>
+              <label class="checkbox"><input type="checkbox" class="color-toggle" value="R" />R</label>
+              <label class="checkbox"><input type="checkbox" class="color-toggle" value="G" />G</label>
+            </div>
+          </div>
+          <label for="deck-player">Player</label>
+          <select id="deck-player"></select>
+          <label for="deck-notes">Notes</label>
+          <textarea id="deck-notes" placeholder="Format, archetype, notes..."></textarea>
+          <button id="add-deck">Add Deck</button>
+        </div>
+
+        <div class="card stack">
+          <h2>Record Match</h2>
+          <label for="match-date">Date</label>
+          <input id="match-date" type="date" />
+          <label for="deck-a">Deck A</label>
+          <select id="deck-a"></select>
+          <div class="mana-row" id="deck-a-colors"></div>
+          <label for="deck-b">Deck B</label>
+          <select id="deck-b"></select>
+          <div class="mana-row" id="deck-b-colors"></div>
+          <label for="deck-c">Deck C (Optional)</label>
+          <select id="deck-c"></select>
+          <div class="mana-row" id="deck-c-colors"></div>
+          <label for="deck-d">Deck D (Optional)</label>
+          <select id="deck-d"></select>
+          <div class="mana-row" id="deck-d-colors"></div>
+          <label for="match-winner">Winner</label>
+          <select id="match-winner"></select>
+          <label for="match-notes">Notes</label>
+          <textarea id="match-notes" placeholder="Sideboard insights, misplays..."></textarea>
+          <div class="inline-row">
+            <button id="add-match">Add Match</button>
+            <button id="cancel-edit" class="secondary" hidden>Cancel Edit</button>
           </div>
         </div>
-      </div>
-    </header>
+      </aside>
 
-    <section class="grid">
-      <div class="card stack">
-        <h2>Add Player</h2>
-        <label for="player-name">Player Name</label>
-        <input id="player-name" placeholder="e.g. Alex" />
-        <button id="add-player">Add Player</button>
-      </div>
+      <main class="content">
+        <section class="card stack">
+          <h2>Players</h2>
+          <div class="list" id="players-list"></div>
+        </section>
 
-      <div class="card stack">
-        <h2>Add Deck</h2>
-        <label for="deck-name">Deck Name</label>
-        <input id="deck-name" placeholder="e.g. Mono Green Stompy" />
-        <label for="deck-commander">Commander Name</label>
-        <input id="deck-commander" list="commander-suggestions" placeholder="e.g. Atraxa, Praetors' Voice" />
-        <datalist id="commander-suggestions"></datalist>
-        <div id="commander-status" class="status" hidden>Commander lookup status.</div>
-        <div class="inline-row">
-          <label class="checkbox">
-            <input id="override-colors" type="checkbox" />
-            Override colors
-          </label>
-          <div class="color-badges">
-            <label class="checkbox"><input type="checkbox" class="color-toggle" value="W" />W</label>
-            <label class="checkbox"><input type="checkbox" class="color-toggle" value="U" />U</label>
-            <label class="checkbox"><input type="checkbox" class="color-toggle" value="B" />B</label>
-            <label class="checkbox"><input type="checkbox" class="color-toggle" value="R" />R</label>
-            <label class="checkbox"><input type="checkbox" class="color-toggle" value="G" />G</label>
-          </div>
-        </div>
-        <label for="deck-player">Player</label>
-        <select id="deck-player"></select>
-        <label for="deck-notes">Notes</label>
-        <textarea id="deck-notes" placeholder="Format, archetype, notes..."></textarea>
-        <button id="add-deck">Add Deck</button>
-      </div>
+        <section class="card stack">
+          <h2>Decks</h2>
+          <div class="list" id="decks-list"></div>
+        </section>
 
-      <div class="card stack">
-        <h2>Record Match</h2>
-        <label for="match-date">Date</label>
-        <input id="match-date" type="date" />
-        <label for="deck-a">Deck A</label>
-        <select id="deck-a"></select>
-        <div class="mana-row" id="deck-a-colors"></div>
-        <label for="deck-b">Deck B</label>
-        <select id="deck-b"></select>
-        <div class="mana-row" id="deck-b-colors"></div>
-        <label for="deck-c">Deck C (Optional)</label>
-        <select id="deck-c"></select>
-        <div class="mana-row" id="deck-c-colors"></div>
-        <label for="deck-d">Deck D (Optional)</label>
-        <select id="deck-d"></select>
-        <div class="mana-row" id="deck-d-colors"></div>
-        <label for="match-winner">Winner</label>
-        <select id="match-winner"></select>
-        <label for="match-notes">Notes</label>
-        <textarea id="match-notes" placeholder="Sideboard insights, misplays..."></textarea>
-        <div class="inline-row">
-          <button id="add-match">Add Match</button>
-          <button id="cancel-edit" class="secondary" hidden>Cancel Edit</button>
-        </div>
-      </div>
-    </section>
+        <section class="card stack">
+          <h2>Deck Spotlight</h2>
+          <label for="spotlight-deck">Choose Deck</label>
+          <select id="spotlight-deck"></select>
+          <div id="spotlight-body" class="stack"></div>
+        </section>
 
-    <section class="grid">
-      <div class="card stack">
-        <h2>Players</h2>
-        <div class="list" id="players-list"></div>
-      </div>
+        <section class="card stack">
+          <h2>Color Matchups</h2>
+          <div id="color-matchups" class="stack"></div>
+        </section>
 
-      <div class="card stack">
-        <h2>Decks</h2>
-        <div class="list" id="decks-list"></div>
-      </div>
-
-      <div class="card stack">
-        <h2>Deck Spotlight</h2>
-        <label for="spotlight-deck">Choose Deck</label>
-        <select id="spotlight-deck"></select>
-        <div id="spotlight-body" class="stack"></div>
-      </div>
-    </section>
-
-    <section class="card stack">
-      <h2>Color Matchups</h2>
-      <div id="color-matchups" class="stack"></div>
-    </section>
-
-    <section class="card stack">
-      <h2>Match Log</h2>
-      <div class="list" id="matches-list"></div>
-    </section>
+        <section class="card stack">
+          <h2>Match Log</h2>
+          <div class="list" id="matches-list"></div>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script>
