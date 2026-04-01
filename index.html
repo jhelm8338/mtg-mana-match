@@ -368,6 +368,32 @@
       font-size: 12px;
     }
 
+    .collapse-toggle {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-family: "Oxanium", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 12px;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .collapse-toggle span {
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      font-size: 12px;
+    }
+
+    .collapse-content[hidden] {
+      display: none;
+    }
+
     .backup-panel {
       border: 1px solid rgba(90, 210, 255, 0.35);
       border-radius: 12px;
@@ -569,16 +595,18 @@
             <div id="snapshot-list"></div>
           </div>
         </div>
+        <div class="share-panel">
+          <button class="collapse-toggle" id="share-toggle" aria-expanded="false" aria-controls="share-content">
+            Share
+            <span id="share-toggle-icon">+</span>
+          </button>
+          <div id="share-content" class="collapse-content" hidden>
+            <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
+            <p class="muted">Each visitor keeps their own local stats in their browser.</p>
+          </div>
+        </div>
       </div>
     </header>
-
-    <section class="grid">
-      <div class="share-panel">
-        <h4>Share Link</h4>
-        <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
-        <p class="muted">Each visitor keeps their own local stats in their browser.</p>
-      </div>
-    </section>
 
     <section class="grid">
       <div class="card stack">
@@ -714,6 +742,9 @@
       importFile: document.getElementById("import-file"),
       backupStatus: document.getElementById("backup-status"),
       snapshotList: document.getElementById("snapshot-list"),
+      shareToggle: document.getElementById("share-toggle"),
+      shareToggleIcon: document.getElementById("share-toggle-icon"),
+      shareContent: document.getElementById("share-content"),
       playersList: document.getElementById("players-list"),
       decksList: document.getElementById("decks-list"),
       colorMatchups: document.getElementById("color-matchups"),
@@ -1618,6 +1649,19 @@
       saveState();
       render();
       showBackupStatus("Auto-backup restored.");
+    });
+
+    els.shareToggle.addEventListener("click", () => {
+      const isHidden = els.shareContent.hasAttribute("hidden");
+      if (isHidden) {
+        els.shareContent.removeAttribute("hidden");
+        els.shareToggle.setAttribute("aria-expanded", "true");
+        els.shareToggleIcon.textContent = "-";
+      } else {
+        els.shareContent.setAttribute("hidden", "");
+        els.shareToggle.setAttribute("aria-expanded", "false");
+        els.shareToggleIcon.textContent = "+";
+      }
     });
 
     [els.deckA, els.deckB, els.deckC, els.deckD].forEach((select) => {
