@@ -401,6 +401,19 @@
       align-items: center;
     }
 
+    .mana-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .mana-symbol {
+      width: 20px;
+      height: 20px;
+      filter: drop-shadow(0 0 6px rgba(56, 242, 209, 0.25));
+    }
+
     .color-badge {
       padding: 4px 8px;
       border-radius: 999px;
@@ -416,6 +429,17 @@
     .color-badge.B { background: rgba(137, 120, 170, 0.2); }
     .color-badge.R { background: rgba(248, 150, 120, 0.2); }
     .color-badge.G { background: rgba(146, 220, 169, 0.2); }
+
+    .archive-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 91, 211, 0.45);
+      color: var(--accent-2);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
 
     .commander-art {
       width: 100%;
@@ -487,6 +511,20 @@
       </div>
     </header>
 
+    <section class="card stack">
+      <h2>Backup & Restore</h2>
+      <div class="inline-row">
+        <button id="export-data">Download Backup</button>
+        <button id="import-data" class="secondary">Upload Backup</button>
+        <input id="import-file" type="file" accept="application/json" hidden />
+      </div>
+      <div id="backup-status" class="status" hidden></div>
+      <div>
+        <h3>Auto-Backups (Last 10)</h3>
+        <div id="snapshot-list"></div>
+      </div>
+    </section>
+
     <section class="grid">
       <div class="card stack">
         <h2>Add Player</h2>
@@ -529,12 +567,16 @@
         <input id="match-date" type="date" />
         <label for="deck-a">Deck A</label>
         <select id="deck-a"></select>
+        <div class="mana-row" id="deck-a-colors"></div>
         <label for="deck-b">Deck B</label>
         <select id="deck-b"></select>
+        <div class="mana-row" id="deck-b-colors"></div>
         <label for="deck-c">Deck C (Optional)</label>
         <select id="deck-c"></select>
+        <div class="mana-row" id="deck-c-colors"></div>
         <label for="deck-d">Deck D (Optional)</label>
         <select id="deck-d"></select>
+        <div class="mana-row" id="deck-d-colors"></div>
         <label for="match-winner">Winner</label>
         <select id="match-winner"></select>
         <label for="match-notes">Notes</label>
@@ -578,6 +620,8 @@
 
   <script>
     const storeKey = "mtg_tracker_v1";
+    const snapshotKey = "mtg_tracker_snapshots_v1";
+    const maxSnapshots = 10;
 
     const state = loadState();
     let editingMatchId = "";
@@ -602,10 +646,19 @@
       deckB: document.getElementById("deck-b"),
       deckC: document.getElementById("deck-c"),
       deckD: document.getElementById("deck-d"),
+      deckAColors: document.getElementById("deck-a-colors"),
+      deckBColors: document.getElementById("deck-b-colors"),
+      deckCColors: document.getElementById("deck-c-colors"),
+      deckDColors: document.getElementById("deck-d-colors"),
       matchWinner: document.getElementById("match-winner"),
       matchNotes: document.getElementById("match-notes"),
       addMatch: document.getElementById("add-match"),
       cancelEdit: document.getElementById("cancel-edit"),
+      exportData: document.getElementById("export-data"),
+      importData: document.getElementById("import-data"),
+      importFile: document.getElementById("import-file"),
+      backupStatus: document.getElementById("backup-status"),
+      snapshotList: document.getElementById("snapshot-list"),
       playersList: document.getElementById("players-list"),
       decksList: document.getElementById("decks-list"),
       colorMatchups: document.getElementById("color-matchups"),
@@ -638,6 +691,34 @@
 
     function saveState() {
       localStorage.setItem(storeKey, JSON.stringify(state));
+      writeSnapshot();
+    }
+
+    function writeSnapshot() {
+      try {
+        const raw = localStorage.getItem(snapshotKey);
+        const snapshots = raw ? JSON.parse(raw) : [];
+        const entry = {
+          id: uid(),
+          savedAt: new Date().toISOString(),
+          data: JSON.parse(JSON.stringify(state))
+        };
+        const updated = [entry, ...snapshots].slice(0, maxSnapshots);
+        localStorage.setItem(snapshotKey, JSON.stringify(updated));
+      } catch (err) {
+        // Snapshot failures should not block normal saves.
+      }
+    }
+
+    function loadSnapshots() {
+      const raw = localStorage.getItem(snapshotKey);
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
     }
 
     function getPlayer(id) {
@@ -667,11 +748,25 @@
     }
 
     function renderColorBadges(colors) {
-      if (!colors || colors.length === 0) {
-        return '<div class="color-badges"><span class="color-badge">C</span></div>';
-      }
-      return `<div class="color-badges">${colors
-        .map((c) => `<span class="color-badge ${c}">${c}</span>`)
+      return renderManaSymbols(colors);
+    }
+
+    const manaSymbolMap = {
+      W: "https://svgs.scryfall.io/card-symbols/W.svg",
+      U: "https://svgs.scryfall.io/card-symbols/U.svg",
+      B: "https://svgs.scryfall.io/card-symbols/B.svg",
+      R: "https://svgs.scryfall.io/card-symbols/R.svg",
+      G: "https://svgs.scryfall.io/card-symbols/G.svg",
+      C: "https://svgs.scryfall.io/card-symbols/C.svg"
+    };
+
+    function renderManaSymbols(colors) {
+      const palette = (colors && colors.length > 0) ? colors : ["C"];
+      return `<div class="mana-row">${palette
+        .map((c) => {
+          const src = manaSymbolMap[c] || manaSymbolMap.C;
+          return `<img class="mana-symbol" alt="${c}" src="${src}" />`;
+        })
         .join("")}</div>`;
     }
 
@@ -894,10 +989,14 @@
         label: deckLabel(d)
       }));
 
-      renderSelect(els.deckA, deckOptions, state.decks.length ? "Select deck" : "Add a deck first");
-      renderSelect(els.deckB, deckOptions, state.decks.length ? "Select deck" : "Add a deck first");
-      renderSelect(els.deckC, deckOptions, "Optional deck");
-      renderSelect(els.deckD, deckOptions, "Optional deck");
+      const activeDeckOptions = state.decks
+        .filter((d) => !d.archived)
+        .map((d) => ({ value: d.id, label: deckLabel(d) }));
+
+      renderSelect(els.deckA, activeDeckOptions, activeDeckOptions.length ? "Select deck" : "Add a deck first");
+      renderSelect(els.deckB, activeDeckOptions, activeDeckOptions.length ? "Select deck" : "Add a deck first");
+      renderSelect(els.deckC, activeDeckOptions, "Optional deck");
+      renderSelect(els.deckD, activeDeckOptions, "Optional deck");
       renderSelect(els.spotlightDeck, deckOptions, state.decks.length ? "Select deck" : "Add a deck first");
       updateWinnerOptions();
       updateMatchFormState();
@@ -944,11 +1043,18 @@
                   <span>${stats.matches} matches</span>
                   <span>${stats.winRate}% match win</span>
                 </div>
-                <div class="match-meta">
-                  <span>Commander: ${deck.commanderName || "Unknown"}</span>
-                  <span>${colorIdentityLabel(getDeckColors(deck))}</span>
-                </div>
+            <div class="match-meta">
+              <span>Commander: ${deck.commanderName || "Unknown"}</span>
+              ${renderManaSymbols(getDeckColors(deck))}
+            </div>
+            ${deck.archived ? '<span class="archive-tag">Archived</span>' : ""}
                 <p class="muted">${deck.notes || "No notes"}</p>
+                <div class="inline-row">
+                  <button class="secondary small" data-archive-deck="${deck.id}">
+                    ${deck.archived ? "Restore Deck" : "Archive Deck"}
+                  </button>
+                  <button class="secondary small" data-delete-deck="${deck.id}">Delete Deck</button>
+                </div>
               </div>
               ${deck.commanderImage ? `<img class="commander-thumb" alt="${deck.commanderName}" src="${deck.commanderImage}" />` : ""}
             </div>
@@ -993,6 +1099,7 @@
 
       renderSpotlight();
       renderColorMatchups();
+      els.snapshotList.innerHTML = renderSnapshotList();
     }
 
     function renderSpotlight() {
@@ -1023,7 +1130,7 @@
             <span>Commander: ${deck.commanderName || "Unknown"}</span>
             <span>${deck.commanderManaCost || ""}</span>
           </div>
-          ${renderColorBadges(getDeckColors(deck))}
+          ${renderManaSymbols(getDeckColors(deck))}
           ${deck.overrideColorsEnabled ? '<div class="muted">Colors overridden</div>' : ""}
           ${deck.commanderImage ? `<img class="commander-art" alt="${deck.commanderName}" src="${deck.commanderImage}" />` : ""}
           <p class="muted">${deck.notes || "No notes"}</p>
@@ -1111,12 +1218,69 @@
         return { value: id, label: deckLabel(deck) };
       });
       renderSelect(els.matchWinner, options, ids.length ? "Select winner" : "Pick decks first");
+      renderSelectedDeckColors();
+    }
+
+    function renderSelectedDeckColors() {
+      const selections = [
+        { id: els.deckA.value, target: els.deckAColors },
+        { id: els.deckB.value, target: els.deckBColors },
+        { id: els.deckC.value, target: els.deckCColors },
+        { id: els.deckD.value, target: els.deckDColors }
+      ];
+      selections.forEach(({ id, target }) => {
+        if (!target) return;
+        if (!id) {
+          target.innerHTML = "";
+          return;
+        }
+        const deck = getDeck(id);
+        target.innerHTML = deck ? renderManaSymbols(getDeckColors(deck)) : "";
+      });
     }
 
     function updateMatchFormState() {
       const isEditing = Boolean(editingMatchId);
       els.addMatch.textContent = isEditing ? "Save Match" : "Add Match";
       els.cancelEdit.hidden = !isEditing;
+    }
+
+    function showBackupStatus(message, isError = false) {
+      els.backupStatus.textContent = message;
+      els.backupStatus.classList.toggle("error", isError);
+      els.backupStatus.hidden = !message;
+    }
+
+    function normalizeImport(data) {
+      return {
+        players: Array.isArray(data.players) ? data.players : [],
+        decks: Array.isArray(data.decks) ? data.decks : [],
+        matches: Array.isArray(data.matches) ? data.matches : [],
+        cardCache: data.cardCache && typeof data.cardCache === "object" ? data.cardCache : {}
+      };
+    }
+
+    function renderSnapshotList() {
+      const snapshots = loadSnapshots();
+      if (snapshots.length === 0) {
+        return '<div class="notice">No auto-backups yet.</div>';
+      }
+      const rows = snapshots
+        .map((snapshot) => `
+          <div class="list-item">
+            <div class="match-meta">
+              <span>${new Date(snapshot.savedAt).toLocaleString()}</span>
+              <span>${snapshot.data?.players?.length || 0} players</span>
+              <span>${snapshot.data?.decks?.length || 0} decks</span>
+              <span>${snapshot.data?.matches?.length || 0} matches</span>
+            </div>
+            <div class="inline-row">
+              <button class="secondary small" data-restore-snapshot="${snapshot.id}">Restore</button>
+            </div>
+          </div>
+        `)
+        .join("");
+      return `<div class="list">${rows}</div>`;
     }
 
     function resetMatchForm() {
@@ -1137,8 +1301,8 @@
         .sort((a, b) => b.matches - a.matches)
         .map((row) => `
           <tr>
-            <td>${row.colorA}</td>
-            <td>${row.colorB}</td>
+            <td>${renderManaSymbols(row.colorA === "Colorless" ? [] : row.colorA.split(""))}</td>
+            <td>${renderManaSymbols(row.colorB === "Colorless" ? [] : row.colorB.split(""))}</td>
             <td>${row.matches}</td>
             <td>${row.wins}-${row.losses}</td>
             <td>${row.winRate}%</td>
@@ -1179,10 +1343,10 @@
     });
 
     els.addDeck.addEventListener("click", async () => {
-      const name = els.deckName.value.trim();
+      const rawName = els.deckName.value.trim();
       const commanderInput = els.deckCommander.value.trim();
       const playerId = els.deckPlayer.value;
-      if (!name || !playerId || !commanderInput) return;
+      if (!playerId || !commanderInput) return;
 
       try {
         els.commanderStatus.textContent = "Looking up commander...";
@@ -1194,6 +1358,7 @@
           .filter((input) => input.checked)
           .map((input) => input.value);
 
+        const name = rawName || commander.name || "Untitled Deck";
         state.decks.push({
           id: uid(),
           name,
@@ -1303,6 +1468,101 @@
 
     els.cancelEdit.addEventListener("click", () => {
       resetMatchForm();
+    });
+
+    els.decksList.addEventListener("click", (event) => {
+      const archiveBtn = event.target.closest("button[data-archive-deck]");
+      if (archiveBtn) {
+        const id = archiveBtn.getAttribute("data-archive-deck");
+        const deck = getDeck(id);
+        if (!deck) return;
+        deck.archived = !deck.archived;
+        saveState();
+        render();
+        return;
+      }
+
+      const btn = event.target.closest("button[data-delete-deck]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-delete-deck");
+      const deck = getDeck(id);
+      if (!deck) return;
+      const relatedMatches = state.matches.filter((match) => getMatchDeckIds(match).includes(id));
+      const shouldDelete = window.confirm(
+        `Delete deck "${deck.name}"? This will also remove ${relatedMatches.length} related match(es).`
+      );
+      if (!shouldDelete) return;
+      state.decks = state.decks.filter((d) => d.id !== id);
+      state.matches = state.matches.filter((match) => !getMatchDeckIds(match).includes(id));
+      saveState();
+      render();
+    });
+
+    els.exportData.addEventListener("click", () => {
+      try {
+        const payload = JSON.stringify(state, null, 2);
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const dd = String(today.getDate()).padStart(2, "0");
+        link.href = url;
+        link.download = `manamatch-backup-${yyyy}-${mm}-${dd}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showBackupStatus("Backup downloaded.");
+      } catch (error) {
+        showBackupStatus("Backup failed.", true);
+      }
+    });
+
+    els.importData.addEventListener("click", () => {
+      els.importFile.value = "";
+      els.importFile.click();
+    });
+
+    els.importFile.addEventListener("change", async () => {
+      const file = els.importFile.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const normalized = normalizeImport(parsed);
+        const confirmOverwrite = window.confirm("Importing will replace your current data. Continue?");
+        if (!confirmOverwrite) return;
+        state.players = normalized.players;
+        state.decks = normalized.decks;
+        state.matches = normalized.matches;
+        state.cardCache = normalized.cardCache;
+        saveState();
+        render();
+        showBackupStatus("Backup imported.");
+      } catch (error) {
+        showBackupStatus("Import failed. Invalid backup file.", true);
+      }
+    });
+
+    els.snapshotList.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-restore-snapshot]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-restore-snapshot");
+      const snapshots = loadSnapshots();
+      const snapshot = snapshots.find((item) => item.id === id);
+      if (!snapshot) return;
+      const confirmRestore = window.confirm("Restore this auto-backup? Current data will be replaced.");
+      if (!confirmRestore) return;
+      const normalized = normalizeImport(snapshot.data || {});
+      state.players = normalized.players;
+      state.decks = normalized.decks;
+      state.matches = normalized.matches;
+      state.cardCache = normalized.cardCache;
+      saveState();
+      render();
+      showBackupStatus("Auto-backup restored.");
     });
 
     [els.deckA, els.deckB, els.deckC, els.deckD].forEach((select) => {
