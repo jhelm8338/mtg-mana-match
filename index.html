@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ManaMatch - MTG Deck Tracker</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
+
+    :root {
+      --bg: #06070c;
+      --panel: #0f1324;
+      --panel-2: #121a30;
+      --card: #111a33;
+      --stroke: rgba(90, 210, 255, 0.35);
+      --text: #e9f4ff;
+      --muted: #8aa2c6;
+      --accent: #38f2d1;
+      --accent-2: #ff5bd3;
+      --danger: #ff6b6b;
+      --success: #7eff9d;
+      --shadow: rgba(2, 4, 20, 0.7);
+      --glow: rgba(56, 242, 209, 0.35);
+      --glow-2: rgba(255, 91, 211, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(56, 242, 209, 0.18), transparent 45%),
+        radial-gradient(circle at 88% 12%, rgba(255, 91, 211, 0.18), transparent 50%),
+        linear-gradient(135deg, #05060b 0%, #0b0f24 55%, #05060b 100%);
+      color: var(--text);
+      font-family: "Space Mono", "Courier New", monospace;
+      padding: 28px 20px 80px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(56, 242, 209, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 91, 211, 0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.45;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(56, 242, 209, 0.12), transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+      mix-blend-mode: screen;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .title h1 {
+      margin: 0 0 8px;
+      font-family: "Oxanium", sans-serif;
+      font-size: clamp(30px, 5vw, 48px);
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 580px;
+      line-height: 1.5;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(18, 26, 48, 0.8);
+      border: 1px solid var(--stroke);
+      color: var(--accent);
+      font-size: 13px;
+      letter-spacing: 0.2px;
+      box-shadow: 0 0 18px rgba(56, 242, 209, 0.12);
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(56, 242, 209, 0.25);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 20px 40px var(--shadow), 0 0 24px rgba(56, 242, 209, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: 0.3px;
+      font-family: "Oxanium", sans-serif;
+      text-transform: uppercase;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(90, 210, 255, 0.35);
+      background: rgba(16, 22, 40, 0.9);
+      color: var(--text);
+      font-family: "Space Mono", monospace;
+      font-size: 14px;
+      box-shadow: inset 0 0 18px rgba(7, 16, 38, 0.6);
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+
+    button {
+      border: none;
+      background: linear-gradient(120deg, rgba(56, 242, 209, 0.95), rgba(56, 242, 209, 0.7));
+      color: #041b19;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: "Oxanium", sans-serif;
+      letter-spacing: 0.3px;
+      box-shadow: 0 0 18px var(--glow), 0 8px 20px var(--shadow);
+    }
+
+    button.secondary {
+      background: transparent;
+      border: 1px solid rgba(255, 91, 211, 0.5);
+      color: var(--text);
+      box-shadow: 0 0 16px var(--glow-2);
+    }
+
+    button.ghost {
+      background: transparent;
+      color: var(--muted);
+    }
+
+    button.small {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .stats {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+
+    .stat {
+      background: rgba(16, 24, 44, 0.8);
+      border: 1px solid rgba(56, 242, 209, 0.25);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .stat .value {
+      font-size: 20px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      background: rgba(17, 26, 51, 0.8);
+      border: 1px solid rgba(90, 210, 255, 0.2);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .list-item h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .muted { color: var(--muted); }
+
+    .match-row {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+
+    .match-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill.small {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+
+    .matchup-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .matchup-table th,
+    .matchup-table td {
+      padding: 8px 6px;
+      text-align: left;
+      border-bottom: 1px solid rgba(56, 242, 209, 0.2);
+    }
+
+    .matchup-table th {
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 11px;
+    }
+
+    .notice {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px dashed rgba(56, 242, 209, 0.35);
+      color: var(--muted);
+      background: rgba(10, 16, 34, 0.6);
+      font-size: 13px;
+    }
+
+    .status {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(90, 210, 255, 0.3);
+      background: rgba(12, 18, 36, 0.85);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status.error {
+      border-color: rgba(217, 125, 106, 0.7);
+      color: var(--danger);
+    }
+
+    .color-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .color-badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(90, 210, 255, 0.35);
+      background: rgba(12, 18, 36, 0.8);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .color-badge.W { background: rgba(245, 236, 191, 0.16); }
+    .color-badge.U { background: rgba(141, 197, 255, 0.18); }
+    .color-badge.B { background: rgba(137, 120, 170, 0.2); }
+    .color-badge.R { background: rgba(248, 150, 120, 0.2); }
+    .color-badge.G { background: rgba(146, 220, 169, 0.2); }
+
+    .commander-art {
+      width: 100%;
+      max-width: 240px;
+      border-radius: 14px;
+      border: 1px solid rgba(90, 210, 255, 0.4);
+      box-shadow: 0 16px 30px var(--shadow), 0 0 24px var(--glow);
+      object-fit: cover;
+    }
+
+    .commander-thumb {
+      width: 72px;
+      height: 100px;
+      border-radius: 10px;
+      border: 1px solid rgba(90, 210, 255, 0.4);
+      object-fit: cover;
+    }
+
+    .inline-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--stroke);
+      border: none;
+      margin: 12px 0;
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 18px 14px 60px; }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>ManaMatch</h1>
+        <p>Track deck vs deck results, attach players to decks, and see matchup performance at a glance. Data is saved locally in your browser.</p>
+      </div>
+      <div class="pill-row">
+        <div class="pill" id="pill-players">0 Players</div>
+        <div class="pill" id="pill-decks">0 Decks</div>
+        <div class="pill" id="pill-matches">0 Matches</div>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card stack">
+        <h2>Add Player</h2>
+        <label for="player-name">Player Name</label>
+        <input id="player-name" placeholder="e.g. Alex" />
+        <button id="add-player">Add Player</button>
+      </div>
+
+      <div class="card stack">
+        <h2>Add Deck</h2>
+        <label for="deck-name">Deck Name</label>
+        <input id="deck-name" placeholder="e.g. Mono Green Stompy" />
+        <label for="deck-commander">Commander Name</label>
+        <input id="deck-commander" list="commander-suggestions" placeholder="e.g. Atraxa, Praetors' Voice" />
+        <datalist id="commander-suggestions"></datalist>
+        <div id="commander-status" class="status" hidden>Commander lookup status.</div>
+        <div class="inline-row">
+          <label class="checkbox">
+            <input id="override-colors" type="checkbox" />
+            Override colors
+          </label>
+          <div class="color-badges">
+            <label class="checkbox"><input type="checkbox" class="color-toggle" value="W" />W</label>
+            <label class="checkbox"><input type="checkbox" class="color-toggle" value="U" />U</label>
+            <label class="checkbox"><input type="checkbox" class="color-toggle" value="B" />B</label>
+            <label class="checkbox"><input type="checkbox" class="color-toggle" value="R" />R</label>
+            <label class="checkbox"><input type="checkbox" class="color-toggle" value="G" />G</label>
+          </div>
+        </div>
+        <label for="deck-player">Player</label>
+        <select id="deck-player"></select>
+        <label for="deck-notes">Notes</label>
+        <textarea id="deck-notes" placeholder="Format, archetype, notes..."></textarea>
+        <button id="add-deck">Add Deck</button>
+      </div>
+
+      <div class="card stack">
+        <h2>Record Match</h2>
+        <label for="match-date">Date</label>
+        <input id="match-date" type="date" />
+        <label for="deck-a">Deck A</label>
+        <select id="deck-a"></select>
+        <label for="deck-b">Deck B</label>
+        <select id="deck-b"></select>
+        <label for="deck-c">Deck C (Optional)</label>
+        <select id="deck-c"></select>
+        <label for="deck-d">Deck D (Optional)</label>
+        <select id="deck-d"></select>
+        <label for="match-winner">Winner</label>
+        <select id="match-winner"></select>
+        <label for="match-notes">Notes</label>
+        <textarea id="match-notes" placeholder="Sideboard insights, misplays..."></textarea>
+        <div class="inline-row">
+          <button id="add-match">Add Match</button>
+          <button id="cancel-edit" class="secondary" hidden>Cancel Edit</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card stack">
+        <h2>Players</h2>
+        <div class="list" id="players-list"></div>
+      </div>
+
+      <div class="card stack">
+        <h2>Decks</h2>
+        <div class="list" id="decks-list"></div>
+      </div>
+
+      <div class="card stack">
+        <h2>Deck Spotlight</h2>
+        <label for="spotlight-deck">Choose Deck</label>
+        <select id="spotlight-deck"></select>
+        <div id="spotlight-body" class="stack"></div>
+      </div>
+    </section>
+
+    <section class="card stack">
+      <h2>Color Matchups</h2>
+      <div id="color-matchups" class="stack"></div>
+    </section>
+
+    <section class="card stack">
+      <h2>Match Log</h2>
+      <div class="list" id="matches-list"></div>
+    </section>
+  </div>
+
+  <script>
+    const storeKey = "mtg_tracker_v1";
+
+    const state = loadState();
+    let editingMatchId = "";
+
+    const els = {
+      pillPlayers: document.getElementById("pill-players"),
+      pillDecks: document.getElementById("pill-decks"),
+      pillMatches: document.getElementById("pill-matches"),
+      playerName: document.getElementById("player-name"),
+      addPlayer: document.getElementById("add-player"),
+      deckName: document.getElementById("deck-name"),
+      deckCommander: document.getElementById("deck-commander"),
+      commanderSuggestions: document.getElementById("commander-suggestions"),
+      commanderStatus: document.getElementById("commander-status"),
+      overrideColors: document.getElementById("override-colors"),
+      colorToggles: Array.from(document.querySelectorAll(".color-toggle")),
+      deckPlayer: document.getElementById("deck-player"),
+      deckNotes: document.getElementById("deck-notes"),
+      addDeck: document.getElementById("add-deck"),
+      matchDate: document.getElementById("match-date"),
+      deckA: document.getElementById("deck-a"),
+      deckB: document.getElementById("deck-b"),
+      deckC: document.getElementById("deck-c"),
+      deckD: document.getElementById("deck-d"),
+      matchWinner: document.getElementById("match-winner"),
+      matchNotes: document.getElementById("match-notes"),
+      addMatch: document.getElementById("add-match"),
+      cancelEdit: document.getElementById("cancel-edit"),
+      playersList: document.getElementById("players-list"),
+      decksList: document.getElementById("decks-list"),
+      colorMatchups: document.getElementById("color-matchups"),
+      matchesList: document.getElementById("matches-list"),
+      spotlightDeck: document.getElementById("spotlight-deck"),
+      spotlightBody: document.getElementById("spotlight-body")
+    };
+
+    function uid() {
+      return Math.random().toString(36).slice(2, 10);
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(storeKey);
+      if (!raw) {
+        return { players: [], decks: [], matches: [], cardCache: {} };
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        return {
+          players: parsed.players || [],
+          decks: parsed.decks || [],
+          matches: parsed.matches || [],
+          cardCache: parsed.cardCache || {}
+        };
+      } catch (err) {
+        return { players: [], decks: [], matches: [], cardCache: {} };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(storeKey, JSON.stringify(state));
+    }
+
+    function getPlayer(id) {
+      return state.players.find((p) => p.id === id);
+    }
+
+    function getDeck(id) {
+      return state.decks.find((d) => d.id === id);
+    }
+
+    function formatDate(input) {
+      if (!input) return "";
+      const [year, month, day] = input.split("-");
+      return `${month}/${day}/${year}`;
+    }
+
+    function deckLabel(deck) {
+      if (!deck) return "Unknown Deck";
+      const player = getPlayer(deck.playerId);
+      const owner = player ? player.name : "Unknown Player";
+      return `${deck.name} (${owner})`;
+    }
+
+    function colorIdentityLabel(colors) {
+      if (!colors || colors.length === 0) return "Colorless";
+      return colors.join("");
+    }
+
+    function renderColorBadges(colors) {
+      if (!colors || colors.length === 0) {
+        return '<div class="color-badges"><span class="color-badge">C</span></div>';
+      }
+      return `<div class="color-badges">${colors
+        .map((c) => `<span class="color-badge ${c}">${c}</span>`)
+        .join("")}</div>`;
+    }
+
+    async function fetchCommander(name) {
+      const cacheKey = name.trim().toLowerCase();
+      if (state.cardCache[cacheKey]) return state.cardCache[cacheKey];
+
+      const url = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Commander lookup failed (${response.status})`);
+      }
+      const data = await response.json();
+      if (data.object !== "card") {
+        throw new Error("Commander lookup failed");
+      }
+
+      const face = data.card_faces?.[0];
+      const imageUris = data.image_uris || face?.image_uris || {};
+      const commander = {
+        name: data.name,
+        scryfallId: data.id,
+        manaCost: data.mana_cost || face?.mana_cost || "",
+        colors: data.colors || face?.colors || [],
+        colorIdentity: data.color_identity || [],
+        typeLine: data.type_line || face?.type_line || "",
+        scryfallUri: data.scryfall_uri || "",
+        image: imageUris.normal || imageUris.large || imageUris.small || ""
+      };
+
+      state.cardCache[cacheKey] = commander;
+      saveState();
+      return commander;
+    }
+
+    async function fetchCommanderSuggestions(query) {
+      const trimmed = query.trim();
+      if (trimmed.length < 2) return [];
+      const url = `https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(trimmed)}`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" }
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      return Array.isArray(data.data) ? data.data : [];
+    }
+
+    function updateCommanderSuggestions(names) {
+      els.commanderSuggestions.innerHTML = "";
+      names.forEach((name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        els.commanderSuggestions.appendChild(option);
+      });
+    }
+
+    function computeDeckStats(deckId) {
+      const matches = state.matches.filter((m) => {
+        const ids = getMatchDeckIds(m);
+        return ids.includes(deckId);
+      });
+
+      let wins = 0;
+      let losses = 0;
+      let matchWins = 0;
+      let matchLosses = 0;
+
+      matches.forEach((m) => {
+        const winnerId = getMatchWinnerId(m);
+        if (!winnerId) return;
+        if (winnerId === deckId) {
+          wins += 1;
+          matchWins += 1;
+        } else {
+          losses += 1;
+          matchLosses += 1;
+        }
+      });
+
+      const matchCount = matches.length;
+      const totalResults = matchWins + matchLosses;
+      const winRate = totalResults > 0 ? Math.round((matchWins / totalResults) * 100) : 0;
+
+      return {
+        matches: matchCount,
+        wins,
+        losses,
+        matchWins,
+        matchLosses,
+        winRate
+      };
+    }
+
+    function computeMatchups(deckId) {
+      const table = new Map();
+      state.matches.forEach((m) => {
+        const ids = getMatchDeckIds(m);
+        if (!ids.includes(deckId)) return;
+        const winnerId = getMatchWinnerId(m);
+        if (!winnerId) return;
+        if (winnerId === deckId) {
+          ids.filter((id) => id !== deckId).forEach((opponentId) => {
+            if (!table.has(opponentId)) {
+              table.set(opponentId, { matches: 0, wins: 0, losses: 0 });
+            }
+            const row = table.get(opponentId);
+            row.matches += 1;
+            row.wins += 1;
+          });
+        } else if (ids.includes(deckId)) {
+          if (!table.has(winnerId)) {
+            table.set(winnerId, { matches: 0, wins: 0, losses: 0 });
+          }
+          const row = table.get(winnerId);
+          row.matches += 1;
+          row.losses += 1;
+        }
+      });
+
+      return Array.from(table.entries()).map(([opponentId, stats]) => ({
+        opponentId,
+        ...stats,
+        winRate: stats.matches ? Math.round((stats.wins / stats.matches) * 100) : 0
+      }));
+    }
+
+    function computeColorMatchups() {
+      const table = new Map();
+      state.matches.forEach((match) => {
+        const ids = getMatchDeckIds(match);
+        if (ids.length < 2) return;
+        const winnerId = getMatchWinnerId(match);
+        if (!winnerId) return;
+        const winnerDeck = getDeck(winnerId);
+        if (!winnerDeck) return;
+        const winnerColor = colorIdentityLabel(getDeckColors(winnerDeck));
+        ids.filter((id) => id !== winnerId).forEach((loserId) => {
+          const loserDeck = getDeck(loserId);
+          if (!loserDeck) return;
+          const loserColor = colorIdentityLabel(getDeckColors(loserDeck));
+          const winKey = `${winnerColor} vs ${loserColor}`;
+          if (!table.has(winKey)) {
+            table.set(winKey, { matches: 0, wins: 0, losses: 0, colorA: winnerColor, colorB: loserColor });
+          }
+          const winRow = table.get(winKey);
+          winRow.matches += 1;
+          winRow.wins += 1;
+
+          const lossKey = `${loserColor} vs ${winnerColor}`;
+          if (!table.has(lossKey)) {
+            table.set(lossKey, { matches: 0, wins: 0, losses: 0, colorA: loserColor, colorB: winnerColor });
+          }
+          const lossRow = table.get(lossKey);
+          lossRow.matches += 1;
+          lossRow.losses += 1;
+        });
+      });
+
+      return Array.from(table.values()).map((row) => ({
+        ...row,
+        winRate: row.matches ? Math.round((row.wins / row.matches) * 100) : 0
+      }));
+    }
+
+    function getDeckColors(deck) {
+      if (!deck) return [];
+      if (deck.overrideColorsEnabled) {
+        return deck.overrideColors || [];
+      }
+      return deck.colorIdentity || [];
+    }
+
+    function renderSelect(select, options, placeholder) {
+      select.innerHTML = "";
+      const placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.textContent = placeholder;
+      select.appendChild(placeholderOption);
+
+      options.forEach((opt) => {
+        const option = document.createElement("option");
+        option.value = opt.value;
+        option.textContent = opt.label;
+        select.appendChild(option);
+      });
+    }
+
+    function computePlayerSummary(playerId) {
+      const decks = state.decks.filter((deck) => deck.playerId === playerId);
+      let matches = 0;
+      let wins = 0;
+      let losses = 0;
+      decks.forEach((deck) => {
+        const stats = computeDeckStats(deck.id);
+        matches += stats.matches;
+        wins += stats.matchWins;
+        losses += stats.matchLosses;
+      });
+      const totalResults = wins + losses;
+      const winRate = totalResults ? Math.round((wins / totalResults) * 100) : 0;
+      return { decks, matches, wins, losses, winRate };
+    }
+
+    function render() {
+      els.pillPlayers.textContent = `${state.players.length} Players`;
+      els.pillDecks.textContent = `${state.decks.length} Decks`;
+      els.pillMatches.textContent = `${state.matches.length} Matches`;
+
+      renderSelect(
+        els.deckPlayer,
+        state.players.map((p) => ({ value: p.id, label: p.name })),
+        state.players.length ? "Select player" : "Add a player first"
+      );
+
+      const deckOptions = state.decks.map((d) => ({
+        value: d.id,
+        label: deckLabel(d)
+      }));
+
+      renderSelect(els.deckA, deckOptions, state.decks.length ? "Select deck" : "Add a deck first");
+      renderSelect(els.deckB, deckOptions, state.decks.length ? "Select deck" : "Add a deck first");
+      renderSelect(els.deckC, deckOptions, "Optional deck");
+      renderSelect(els.deckD, deckOptions, "Optional deck");
+      renderSelect(els.spotlightDeck, deckOptions, state.decks.length ? "Select deck" : "Add a deck first");
+      updateWinnerOptions();
+      updateMatchFormState();
+
+      els.playersList.innerHTML = "";
+      if (state.players.length === 0) {
+        els.playersList.innerHTML = '<div class="notice">Add players to start tracking decks.</div>';
+      } else {
+        state.players.forEach((player) => {
+          const summary = computePlayerSummary(player.id);
+          const playerDecks = summary.decks;
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `
+            <h3>${player.name}</h3>
+            <div class="match-meta">
+              <span>${playerDecks.length} Decks</span>
+              <span>${summary.matches} matches</span>
+              <span>${summary.winRate}% match win</span>
+            </div>
+            <div class="match-meta">
+              <span>Record: ${summary.wins}-${summary.losses}</span>
+              <span>${playerDecks.map((d) => d.name).join(", ") || "No decks yet"}</span>
+            </div>
+          `;
+          els.playersList.appendChild(div);
+        });
+      }
+
+      els.decksList.innerHTML = "";
+      if (state.decks.length === 0) {
+        els.decksList.innerHTML = '<div class="notice">Add decks once players exist.</div>';
+      } else {
+        state.decks.forEach((deck) => {
+          const stats = computeDeckStats(deck.id);
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `
+            <div class="match-row">
+              <div>
+                <h3>${deck.name}</h3>
+                <div class="match-meta">
+                  <span>${getPlayer(deck.playerId)?.name || "Unknown Player"}</span>
+                  <span>${stats.matches} matches</span>
+                  <span>${stats.winRate}% match win</span>
+                </div>
+                <div class="match-meta">
+                  <span>Commander: ${deck.commanderName || "Unknown"}</span>
+                  <span>${colorIdentityLabel(getDeckColors(deck))}</span>
+                </div>
+                <p class="muted">${deck.notes || "No notes"}</p>
+              </div>
+              ${deck.commanderImage ? `<img class="commander-thumb" alt="${deck.commanderName}" src="${deck.commanderImage}" />` : ""}
+            </div>
+          `;
+          els.decksList.appendChild(div);
+        });
+      }
+
+      els.matchesList.innerHTML = "";
+      if (state.matches.length === 0) {
+        els.matchesList.innerHTML = '<div class="notice">Record your first deck matchup.</div>';
+      } else {
+        [...state.matches]
+          .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+          .reverse()
+          .forEach((match) => {
+            const div = document.createElement("div");
+            div.className = "list-item";
+            const matchDeckIds = getMatchDeckIds(match);
+            const decks = matchDeckIds.map((id) => getDeck(id)).filter(Boolean);
+            const winnerId = getMatchWinnerId(match);
+            const winnerDeck = winnerId ? getDeck(winnerId) : null;
+            div.innerHTML = `
+              <div class="match-row">
+                <div>
+                  <h3>${decks.map((deck) => deckLabel(deck)).join(" vs ")}</h3>
+                  <div class="match-meta">
+                    <span class="pill small">${formatDate(match.date) || "No date"}</span>
+                    <span>Winner: ${winnerDeck ? deckLabel(winnerDeck) : "Unknown"}</span>
+                    <span>${match.notes || "No notes"}</span>
+                  </div>
+                </div>
+                <div class="inline-row">
+                  <button class="secondary small" data-edit="${match.id}">Edit</button>
+                  <button class="secondary small" data-delete="${match.id}">Delete</button>
+                </div>
+              </div>
+            `;
+            els.matchesList.appendChild(div);
+          });
+      }
+
+      renderSpotlight();
+      renderColorMatchups();
+    }
+
+    function renderSpotlight() {
+      const deckId = els.spotlightDeck.value;
+      if (!deckId) {
+        els.spotlightBody.innerHTML = '<div class="notice">Pick a deck to see its stats.</div>';
+        return;
+      }
+
+      const deck = getDeck(deckId);
+      if (!deck) {
+        els.spotlightBody.innerHTML = '<div class="notice">Deck not found.</div>';
+        return;
+      }
+
+      const stats = computeDeckStats(deckId);
+      const matchups = computeMatchups(deckId);
+
+      els.spotlightBody.innerHTML = `
+        <div class="list-item">
+          <h3>${deck.name}</h3>
+          <div class="match-meta">
+            <span>${getPlayer(deck.playerId)?.name || "Unknown Player"}</span>
+            <span>${stats.matches} matches</span>
+            <span>${stats.matchWins} wins</span>
+          </div>
+          <div class="match-meta">
+            <span>Commander: ${deck.commanderName || "Unknown"}</span>
+            <span>${deck.commanderManaCost || ""}</span>
+          </div>
+          ${renderColorBadges(getDeckColors(deck))}
+          ${deck.overrideColorsEnabled ? '<div class="muted">Colors overridden</div>' : ""}
+          ${deck.commanderImage ? `<img class="commander-art" alt="${deck.commanderName}" src="${deck.commanderImage}" />` : ""}
+          <p class="muted">${deck.notes || "No notes"}</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Match Wins</div>
+            <div class="value">${stats.matchWins}</div>
+          </div>
+          <div class="stat">
+            <div class="label">Match Losses</div>
+            <div class="value">${stats.matchLosses}</div>
+          </div>
+          <div class="stat">
+            <div class="label">Results</div>
+            <div class="value">${stats.matchWins + stats.matchLosses}</div>
+          </div>
+          <div class="stat">
+            <div class="label">Win Rate</div>
+            <div class="value">${stats.winRate}%</div>
+          </div>
+        </div>
+        <hr class="divider" />
+        <div>
+          <h3>Matchups</h3>
+          ${matchups.length ? renderMatchupTable(matchups) : '<div class="notice">No matchups recorded yet.</div>'}
+        </div>
+      `;
+    }
+
+    function renderMatchupTable(matchups) {
+      const rows = matchups
+        .sort((a, b) => b.matches - a.matches)
+        .map((row) => {
+          const opponent = getDeck(row.opponentId);
+          return `
+            <tr>
+              <td>${deckLabel(opponent)}</td>
+              <td>${row.matches}</td>
+              <td>${row.wins}-${row.losses}</td>
+              <td>${row.winRate}%</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      return `
+        <table class="matchup-table">
+          <thead>
+            <tr>
+              <th>Opponent</th>
+              <th>Matches</th>
+              <th>Record</th>
+              <th>Win Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function getMatchDeckIds(match) {
+      if (Array.isArray(match.deckIds)) return match.deckIds.filter(Boolean);
+      const ids = [match.deckAId, match.deckBId, match.deckCId, match.deckDId].filter(Boolean);
+      return ids;
+    }
+
+    function getMatchWinnerId(match) {
+      if (match.winnerId) return match.winnerId;
+      if (typeof match.winsA === "number" && typeof match.winsB === "number") {
+        if (match.winsA > match.winsB) return match.deckAId;
+        if (match.winsB > match.winsA) return match.deckBId;
+      }
+      return "";
+    }
+
+    function updateWinnerOptions() {
+      const ids = [els.deckA.value, els.deckB.value, els.deckC.value, els.deckD.value]
+        .filter(Boolean)
+        .filter((value, index, self) => self.indexOf(value) === index);
+      const options = ids.map((id) => {
+        const deck = getDeck(id);
+        return { value: id, label: deckLabel(deck) };
+      });
+      renderSelect(els.matchWinner, options, ids.length ? "Select winner" : "Pick decks first");
+    }
+
+    function updateMatchFormState() {
+      const isEditing = Boolean(editingMatchId);
+      els.addMatch.textContent = isEditing ? "Save Match" : "Add Match";
+      els.cancelEdit.hidden = !isEditing;
+    }
+
+    function resetMatchForm() {
+      editingMatchId = "";
+      els.matchDate.value = "";
+      els.deckA.value = "";
+      els.deckB.value = "";
+      els.deckC.value = "";
+      els.deckD.value = "";
+      els.matchNotes.value = "";
+      updateWinnerOptions();
+      initDate();
+      updateMatchFormState();
+    }
+
+    function renderColorMatchups() {
+      const rows = computeColorMatchups()
+        .sort((a, b) => b.matches - a.matches)
+        .map((row) => `
+          <tr>
+            <td>${row.colorA}</td>
+            <td>${row.colorB}</td>
+            <td>${row.matches}</td>
+            <td>${row.wins}-${row.losses}</td>
+            <td>${row.winRate}%</td>
+          </tr>
+        `)
+        .join("");
+
+      if (!rows) {
+        els.colorMatchups.innerHTML = '<div class="notice">Record matches to see color vs color stats.</div>';
+        return;
+      }
+
+      els.colorMatchups.innerHTML = `
+        <table class="matchup-table">
+          <thead>
+            <tr>
+              <th>Color A</th>
+              <th>Color B</th>
+              <th>Matches</th>
+              <th>Record</th>
+              <th>Win Rate (A)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    }
+
+    els.addPlayer.addEventListener("click", () => {
+      const name = els.playerName.value.trim();
+      if (!name) return;
+      state.players.push({ id: uid(), name });
+      els.playerName.value = "";
+      saveState();
+      render();
+    });
+
+    els.addDeck.addEventListener("click", async () => {
+      const name = els.deckName.value.trim();
+      const commanderInput = els.deckCommander.value.trim();
+      const playerId = els.deckPlayer.value;
+      if (!name || !playerId || !commanderInput) return;
+
+      try {
+        els.commanderStatus.textContent = "Looking up commander...";
+        els.commanderStatus.classList.remove("error");
+        els.commanderStatus.hidden = false;
+        const commander = await fetchCommander(commanderInput);
+        const overrideEnabled = els.overrideColors.checked;
+        const overrideColors = els.colorToggles
+          .filter((input) => input.checked)
+          .map((input) => input.value);
+
+        state.decks.push({
+          id: uid(),
+          name,
+          playerId,
+          notes: els.deckNotes.value.trim(),
+          commanderName: commander.name,
+          commanderManaCost: commander.manaCost,
+          colorIdentity: commander.colorIdentity,
+          commanderScryfallId: commander.scryfallId,
+          commanderScryfallUri: commander.scryfallUri,
+          commanderImage: commander.image,
+          overrideColorsEnabled: overrideEnabled,
+          overrideColors
+        });
+        els.commanderStatus.textContent = `Commander found: ${commander.name}`;
+        els.deckName.value = "";
+        els.deckCommander.value = "";
+        els.deckNotes.value = "";
+        els.overrideColors.checked = false;
+        els.colorToggles.forEach((input) => {
+          input.checked = false;
+        });
+        saveState();
+        render();
+      } catch (error) {
+        els.commanderStatus.textContent = error.message || "Commander lookup failed.";
+        els.commanderStatus.classList.add("error");
+        els.commanderStatus.hidden = false;
+      }
+    });
+
+    let commanderSuggestionTimer = null;
+    els.deckCommander.addEventListener("input", () => {
+      const query = els.deckCommander.value;
+      if (commanderSuggestionTimer) {
+        window.clearTimeout(commanderSuggestionTimer);
+      }
+      commanderSuggestionTimer = window.setTimeout(async () => {
+        const suggestions = await fetchCommanderSuggestions(query);
+        updateCommanderSuggestions(suggestions);
+      }, 300);
+    });
+
+    els.addMatch.addEventListener("click", () => {
+      const deckAId = els.deckA.value;
+      const deckBId = els.deckB.value;
+      const deckCId = els.deckC.value;
+      const deckDId = els.deckD.value;
+      const ids = [deckAId, deckBId, deckCId, deckDId].filter(Boolean);
+      const uniqueIds = ids.filter((value, index, self) => self.indexOf(value) === index);
+      if (uniqueIds.length < 2 || uniqueIds.length > 4) return;
+      if (uniqueIds.length !== ids.length) return;
+      const winnerId = els.matchWinner.value;
+      if (!winnerId || !uniqueIds.includes(winnerId)) return;
+      const payload = {
+        id: editingMatchId || uid(),
+        date: els.matchDate.value,
+        deckIds: uniqueIds,
+        winnerId,
+        notes: els.matchNotes.value.trim()
+      };
+      if (editingMatchId) {
+        const index = state.matches.findIndex((m) => m.id === editingMatchId);
+        if (index !== -1) {
+          state.matches[index] = payload;
+        }
+      } else {
+        state.matches.push(payload);
+      }
+      resetMatchForm();
+      saveState();
+      render();
+    });
+
+    els.matchesList.addEventListener("click", (event) => {
+      const deleteBtn = event.target.closest("button[data-delete]");
+      if (deleteBtn) {
+        const id = deleteBtn.getAttribute("data-delete");
+        const index = state.matches.findIndex((m) => m.id === id);
+        if (index === -1) return;
+        state.matches.splice(index, 1);
+        if (editingMatchId === id) {
+          resetMatchForm();
+        }
+        saveState();
+        render();
+        return;
+      }
+
+      const editBtn = event.target.closest("button[data-edit]");
+      if (!editBtn) return;
+      const id = editBtn.getAttribute("data-edit");
+      const match = state.matches.find((m) => m.id === id);
+      if (!match) return;
+      const ids = getMatchDeckIds(match);
+      editingMatchId = match.id;
+      els.matchDate.value = match.date || "";
+      els.deckA.value = ids[0] || "";
+      els.deckB.value = ids[1] || "";
+      els.deckC.value = ids[2] || "";
+      els.deckD.value = ids[3] || "";
+      updateWinnerOptions();
+      els.matchWinner.value = getMatchWinnerId(match) || "";
+      els.matchNotes.value = match.notes || "";
+      updateMatchFormState();
+    });
+
+    els.cancelEdit.addEventListener("click", () => {
+      resetMatchForm();
+    });
+
+    [els.deckA, els.deckB, els.deckC, els.deckD].forEach((select) => {
+      select.addEventListener("change", updateWinnerOptions);
+    });
+
+    els.spotlightDeck.addEventListener("change", renderSpotlight);
+
+    function initDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      els.matchDate.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    initDate();
+    render();
+  </script>
+</body>
+</html>
