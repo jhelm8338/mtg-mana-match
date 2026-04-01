@@ -88,6 +88,55 @@
       text-transform: uppercase;
     }
 
+    .glitch {
+      position: relative;
+      display: inline-block;
+      text-shadow: 0 0 12px rgba(56, 242, 209, 0.35);
+      animation: glitch-skew 2.8s infinite linear;
+    }
+
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .glitch::before {
+      color: var(--accent);
+      transform: translate(2px, -1px);
+      clip-path: inset(0 0 45% 0);
+      animation: glitch-clip 2.5s infinite linear;
+    }
+
+    .glitch::after {
+      color: var(--accent-2);
+      transform: translate(-2px, 1px);
+      clip-path: inset(55% 0 0 0);
+      animation: glitch-clip 2.1s infinite linear reverse;
+    }
+
+    @keyframes glitch-clip {
+      0% { clip-path: inset(0 0 55% 0); }
+      20% { clip-path: inset(10% 0 40% 0); }
+      40% { clip-path: inset(50% 0 10% 0); }
+      60% { clip-path: inset(25% 0 35% 0); }
+      80% { clip-path: inset(60% 0 5% 0); }
+      100% { clip-path: inset(0 0 55% 0); }
+    }
+
+    @keyframes glitch-skew {
+      0% { transform: skew(0deg); }
+      12% { transform: skew(0.3deg); }
+      24% { transform: skew(-0.3deg); }
+      36% { transform: skew(0.2deg); }
+      48% { transform: skew(-0.2deg); }
+      60% { transform: skew(0deg); }
+      100% { transform: skew(0deg); }
+    }
+
     .title p {
       margin: 0;
       color: var(--muted);
@@ -110,6 +159,14 @@
       font-size: 13px;
       letter-spacing: 0.2px;
       box-shadow: 0 0 18px rgba(56, 242, 209, 0.12);
+      animation: pill-flicker 6s infinite ease-in-out;
+    }
+
+    @keyframes pill-flicker {
+      0%, 100% { opacity: 1; }
+      45% { opacity: 0.85; }
+      50% { opacity: 0.6; }
+      55% { opacity: 0.9; }
     }
 
     .grid {
@@ -295,6 +352,34 @@
       font-size: 13px;
     }
 
+    .share-panel {
+      border: 1px solid rgba(90, 210, 255, 0.4);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: rgba(10, 16, 34, 0.7);
+      box-shadow: 0 0 18px rgba(56, 242, 209, 0.15);
+      max-width: 420px;
+    }
+
+    .share-panel h4 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      font-family: "Oxanium", sans-serif;
+    }
+
+    .share-url {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(12, 20, 42, 0.85);
+      border: 1px solid rgba(90, 210, 255, 0.35);
+      font-size: 12px;
+      color: var(--text);
+    }
+
     .status {
       padding: 10px 12px;
       border-radius: 12px;
@@ -387,8 +472,13 @@
   <div class="app">
     <header>
       <div class="title">
-        <h1>ManaMatch</h1>
+        <h1 class="glitch" data-text="ManaMatch">ManaMatch</h1>
         <p>Track deck vs deck results, attach players to decks, and see matchup performance at a glance. Data is saved locally in your browser.</p>
+      </div>
+      <div class="share-panel">
+        <h4>Share Link</h4>
+        <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
+        <p class="muted">Each visitor keeps their own local stats in their browser.</p>
       </div>
       <div class="pill-row">
         <div class="pill" id="pill-players">0 Players</div>
