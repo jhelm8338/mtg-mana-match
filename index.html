@@ -522,11 +522,6 @@
         <h1 class="glitch" data-text="ManaMatch">ManaMatch</h1>
         <p>Track deck vs deck results, attach players to decks, and see matchup performance at a glance. Data is saved locally in your browser.</p>
       </div>
-      <div class="share-panel">
-        <h4>Share Link</h4>
-        <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
-        <p class="muted">Each visitor keeps their own local stats in their browser.</p>
-      </div>
       <div class="pill-row">
         <div class="pill" id="pill-players">0 Players</div>
         <div class="pill" id="pill-decks">0 Decks</div>
@@ -534,17 +529,24 @@
       </div>
     </header>
 
-    <section class="card stack backup-panel">
-      <h2>Backup & Restore</h2>
-      <div class="inline-row">
-        <button id="export-data">Download Backup</button>
-        <button id="import-data" class="secondary">Upload Backup</button>
-        <input id="import-file" type="file" accept="application/json" hidden />
+    <section class="grid">
+      <div class="share-panel">
+        <h4>Share Link</h4>
+        <div class="share-url">https://jhelm8338.github.io/mtg-mana-match/</div>
+        <p class="muted">Each visitor keeps their own local stats in their browser.</p>
       </div>
-      <div id="backup-status" class="status" hidden></div>
-      <div>
-        <h3>Auto-Backups (Last 10)</h3>
-        <div id="snapshot-list"></div>
+      <div class="card stack backup-panel">
+        <h2>Backup</h2>
+        <div class="inline-row">
+          <button id="export-data">Download</button>
+          <button id="import-data" class="secondary">Upload</button>
+          <input id="import-file" type="file" accept="application/json" hidden />
+        </div>
+        <div id="backup-status" class="status" hidden></div>
+        <div>
+          <h3>Auto-Backups (Last 10)</h3>
+          <div id="snapshot-list"></div>
+        </div>
       </div>
     </section>
 
