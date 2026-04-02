@@ -508,6 +508,39 @@
       filter: drop-shadow(0 0 6px rgba(56, 242, 209, 0.25));
     }
 
+    .mana-fallback {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(90, 210, 255, 0.35);
+      color: var(--text);
+      font-size: 11px;
+      background: rgba(12, 18, 36, 0.85);
+      letter-spacing: 0.1em;
+    }
+
+    .image-fallback {
+      border-radius: 12px;
+      border: 1px dashed rgba(90, 210, 255, 0.35);
+      padding: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(12, 18, 36, 0.7);
+      max-width: 240px;
+    }
+
+    .image-fallback.small {
+      width: 72px;
+      height: 100px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 6px;
+      font-size: 10px;
+    }
+
     .color-badge {
       padding: 4px 8px;
       border-radius: 999px;
@@ -875,7 +908,7 @@
       return `<div class="mana-row">${palette
         .map((c) => {
           const src = manaSymbolMap[c] || manaSymbolMap.C;
-          return `<img class="mana-symbol" alt="${c}" src="${src}" />`;
+          return `<img class="mana-symbol" alt="${c}" data-letter="${c}" src="${src}" />`;
         })
         .join("")}</div>`;
     }
@@ -1166,7 +1199,7 @@
                   <button class="secondary small" data-delete-deck="${deck.id}">Delete Deck</button>
                 </div>
               </div>
-              ${deck.commanderImage ? `<img class="commander-thumb" alt="${deck.commanderName}" src="${deck.commanderImage}" />` : ""}
+              ${deck.commanderImage ? `<img class="commander-thumb" alt="${deck.commanderName}" data-name="${deck.commanderName}" data-type="${deck.commanderTypeLine || ""}" src="${deck.commanderImage}" />` : ""}
             </div>
           `;
           els.decksList.appendChild(div);
@@ -1242,7 +1275,7 @@
           </div>
           ${renderManaSymbols(getDeckColors(deck))}
           ${deck.overrideColorsEnabled ? '<div class="muted">Colors overridden</div>' : ""}
-          ${deck.commanderImage ? `<img class="commander-art" alt="${deck.commanderName}" src="${deck.commanderImage}" />` : ""}
+          ${deck.commanderImage ? `<img class="commander-art" alt="${deck.commanderName}" data-name="${deck.commanderName}" data-type="${deck.commanderTypeLine || ""}" src="${deck.commanderImage}" />` : ""}
           <p class="muted">${deck.notes || "No notes"}</p>
         </div>
         <div class="stats">
@@ -1480,6 +1513,7 @@
           commanderScryfallId: commander.scryfallId,
           commanderScryfallUri: commander.scryfallUri,
           commanderImage: commander.image,
+          commanderTypeLine: commander.typeLine,
           overrideColorsEnabled: overrideEnabled,
           overrideColors
         });
@@ -1687,6 +1721,30 @@
         els.shareToggleIcon.textContent = "+";
       }
     });
+
+    document.addEventListener("error", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLImageElement)) return;
+      if (target.classList.contains("mana-symbol")) {
+        const letter = target.dataset.letter || "C";
+        const fallback = document.createElement("span");
+        fallback.className = "mana-fallback";
+        fallback.textContent = letter;
+        target.replaceWith(fallback);
+        return;
+      }
+      if (target.classList.contains("commander-art") || target.classList.contains("commander-thumb")) {
+        const name = target.dataset.name || target.alt || "Commander";
+        const typeLine = target.dataset.type || "";
+        const fallback = document.createElement("div");
+        fallback.className = `image-fallback${target.classList.contains("commander-thumb") ? " small" : ""}`;
+        fallback.innerHTML = `
+          <div>${name}</div>
+          ${typeLine ? `<div class="muted">${typeLine}</div>` : '<div class="muted">Art blocked</div>'}
+        `;
+        target.replaceWith(fallback);
+      }
+    }, true);
 
     [els.deckA, els.deckB, els.deckC, els.deckD].forEach((select) => {
       select.addEventListener("change", updateWinnerOptions);
